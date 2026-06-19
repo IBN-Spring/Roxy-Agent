@@ -1,5 +1,7 @@
 """"roxy doctor" — health check command."""
 
+import asyncio
+
 import click
 from rich.console import Console
 from rich.table import Table
@@ -98,6 +100,27 @@ def _doctor_rich(cfg: Config, verbose: bool) -> None:
             console.print(f"  [{risk_style}]{t.name}[/{risk_style}] {ws} {t.description}")
     except Exception:
         console.print("  [dim]Tools not available (install roxy with all dependencies)[/dim]")
+
+    # ── Research Channels ─────────────────────────────────────────
+    console.print()
+    console.print("[bold]Research Channels:[/bold]")
+    try:
+        from roxy.research.channels import ALL_CHANNELS, RSSChannel
+
+        cfg_copy = Config()
+        cfg_copy.load()
+        for ch in ALL_CHANNELS:
+            tier_icon = {0: "🟢", 1: "🟡", 2: "🔴"}.get(ch.tier, "⚪")
+            try:
+                status, msg = asyncio.run(ch.check(cfg_copy))
+            except Exception:
+                status, msg = "error", "check failed"
+            status_icon = {"ok": "[green]✓[/green]", "warn": "[yellow]![/yellow]", "off": "[dim]○[/dim]"}.get(status, "[red]✗[/red]")
+            console.print(f"  {tier_icon} {status_icon} [cyan]{ch.name}[/cyan] — {ch.description}")
+            if status != "ok":
+                console.print(f"       [dim]{msg}[/dim]")
+    except Exception:
+        console.print("  [dim]Channels not available[/dim]")
 
     # ── Summary ──────────────────────────────────────────────────
     console.print()
