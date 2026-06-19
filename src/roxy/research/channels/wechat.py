@@ -48,7 +48,7 @@ class WechatChannel(Channel):
             )
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = _connect_readonly(db_path)
             tables = conn.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('articles', 'subscriptions')"
             ).fetchall()
@@ -84,7 +84,7 @@ class WechatChannel(Channel):
             return []
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = _connect_readonly(db_path)
             conn.row_factory = sqlite3.Row
         except Exception as exc:
             logger.error(f"WechatChannel: cannot open DB at {db_path}: {exc}")
@@ -181,3 +181,8 @@ class WechatChannel(Channel):
                 items.append(item)
 
         return items
+
+
+def _connect_readonly(db_path: Path) -> sqlite3.Connection:
+    """Open a SQLite database in read-only URI mode."""
+    return sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)

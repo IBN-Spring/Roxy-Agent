@@ -190,7 +190,7 @@ def research_collect(
         return
 
     # Single URL mode
-    if not url:
+    if not url and channel == "rss":
         console.print("[red]Error: --url is required (or use --all for configured feeds).[/red]")
         console.print("Example: roxy research collect --url \"https://example.com/feed.xml\"")
         return

@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from roxy.config.loader import Config
-from roxy.research.channels.wechat import WechatChannel
+from roxy.research.channels.wechat import WechatChannel, _connect_readonly
 
 
 def _create_test_db(db_path: Path, articles: list[dict] | None = None):
@@ -169,3 +169,14 @@ class TestWechatChannel:
         items = await ch.collect(cfg)
         assert len(items) == 1
         assert items[0].title == "Custom"
+
+    def test_connect_readonly_rejects_writes(self, tmp_path: Path):
+        db_path = tmp_path / "readonly.db"
+        _create_test_db(db_path)
+
+        conn = _connect_readonly(db_path)
+        try:
+            with pytest.raises(sqlite3.OperationalError):
+                conn.execute("INSERT INTO subscriptions (fakeid, nickname) VALUES ('x', 'y')")
+        finally:
+            conn.close()
