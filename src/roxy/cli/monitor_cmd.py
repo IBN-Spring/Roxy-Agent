@@ -101,6 +101,8 @@ def monitor_run(as_json: bool, max_items: int) -> None:
             "results": results,
         }
         click.echo(json.dumps(output, indent=2, ensure_ascii=False))
+        if errors:
+            raise SystemExit(1)
     else:
         console.print()
         for r in results:
