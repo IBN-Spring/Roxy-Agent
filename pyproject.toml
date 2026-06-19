@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "roxy"
+version = "0.1.0"
+description = "Roxy — A vertical-domain autonomous research Agent CLI/TUI"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [
+    { name = "Roxy Contributors" },
+]
+dependencies = [
+    "click>=8.0",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+    "httpx>=0.27",
+    "litellm>=1.50",
+]
+[project.optional-dependencies]
+tui = ["textual>=0.80"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.24", "ruff>=0.6"]
+
+[project.scripts]
+roxy = "roxy.cli.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/roxy"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
