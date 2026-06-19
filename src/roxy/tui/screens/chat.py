@@ -112,6 +112,16 @@ class ChatScreen(Screen):
                     full_content += output.content
                     self._upsert_assistant_message(full_content)
 
+                elif output.type == "tool_call":
+                    calls = output.meta.get("calls", [])
+                    thinking.update(f"🔧 Calling: {', '.join(calls)}")
+
+                elif output.type == "tool_result":
+                    tool = output.meta.get("tool", "")
+                    ok = output.meta.get("success", False)
+                    icon = "✓" if ok else "✗"
+                    thinking.update(f"  {icon} {tool}")
+
                 elif output.type == "done":
                     thinking.update("")
 

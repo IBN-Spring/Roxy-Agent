@@ -8,6 +8,20 @@ from roxy.config.loader import Config
 logger = logging.getLogger(__name__)
 
 
+class ProviderError(Exception):
+    """Raised when an LLM provider call fails.
+
+    Carries a user-visible message and an optional machine-readable reason code.
+    The QueryEngine catches this and yields a TurnOutput("error", ...) WITHOUT
+    saving anything to the session message history.
+    """
+
+    def __init__(self, message: str, reason: str = "provider_error"):
+        super().__init__(message)
+        self.message = message
+        self.reason = reason  # "not_installed" | "api_error" | "timeout" | ...
+
+
 class ModelProvider:
     """Wraps LiteLLM `acompletion` for multi-provider LLM access.
 
@@ -90,11 +104,16 @@ class ModelProvider:
                 if content:
                     yield content
         except ImportError:
-            logger.error("litellm not installed — install with: pip install litellm")
-            yield "\n[Error: litellm not installed. Run: pip install litellm]\n"
+            raise ProviderError(
+                "litellm is not installed. Run: pip install litellm",
+                reason="not_installed",
+            )
         except Exception as exc:
             logger.error(f"LLM call failed: {exc}")
-            yield f"\n[Error: {exc}]\n"
+            raise ProviderError(
+                str(exc),
+                reason="api_error",
+            ) from exc
 
     async def complete(
         self,

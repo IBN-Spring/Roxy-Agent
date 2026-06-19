@@ -1,7 +1,9 @@
-"""Tests for ModelProvider — resolve model, provider config extraction."""
+"""Tests for ModelProvider — resolve model, provider config extraction, error handling."""
+
+import pytest
 
 from roxy.config.loader import Config
-from roxy.models.provider import ModelProvider
+from roxy.models.provider import ModelProvider, ProviderError
 
 
 class TestResolveModel:
@@ -34,3 +36,37 @@ class TestProviderConfig:
         provider = ModelProvider(config)
         cfg = provider._get_provider_config("unknown/model")
         assert cfg["api_key"] == ""
+
+
+class TestProviderError:
+    """ProviderError is raised (not yielded) so callers can handle it cleanly."""
+
+    @pytest.mark.asyncio
+    async def test_stream_raises_on_import_error(self, config: Config):
+        """When litellm is not importable, stream() raises ProviderError, not yielding text."""
+        config.load()
+        provider = ModelProvider(config)
+
+        # Simulate missing litellm by blocking the import
+        import builtins
+        original_import = builtins.__import__
+
+        def fake_import(name, *args, **kwargs):
+            if name == "litellm":
+                raise ImportError("No module named 'litellm'")
+            return original_import(name, *args, **kwargs)
+
+        builtins.__import__ = fake_import
+        try:
+            with pytest.raises(ProviderError) as exc_info:
+                async for _ in provider.stream("hello"):
+                    pass
+            assert exc_info.value.reason == "not_installed"
+            assert "litellm" in exc_info.value.message
+        finally:
+            builtins.__import__ = original_import
+
+    def test_provider_error_str(self):
+        err = ProviderError("test message", reason="timeout")
+        assert str(err) == "test message"
+        assert err.reason == "timeout"

@@ -87,13 +87,20 @@ def _launch_repl(cfg, model: str | None, session: str | None) -> None:
 
     async def process_message(text: str) -> None:
         console.print()
-        full = ""
         async for output in engine.submit_message(text, model):
             if output.type == "status":
                 console.print(f"[dim]{output.content}[/dim]")
+            elif output.type == "tool_call":
+                calls = output.meta.get("calls", [])
+                console.print(f"[yellow]🔧 {', '.join(calls)}[/yellow]")
+            elif output.type == "tool_result":
+                tool = output.meta.get("tool", "")
+                ok = output.meta.get("success", False)
+                style = "green" if ok else "red"
+                preview = output.content[:120].replace("\n", " ")
+                console.print(f"[{style}]  └─ {tool}: {preview}...[/{style}]")
             elif output.type == "chunk":
                 console.print(output.content, end="")
-                full += output.content
             elif output.type == "error":
                 console.print(f"\n[red]Error: {output.content}[/red]")
             elif output.type == "done":

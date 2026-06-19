@@ -80,6 +80,24 @@ def _doctor_rich(cfg: Config, verbose: bool) -> None:
     results = health.check_all()
     console.print(health.format_report(results))
 
+    # ── Tools ────────────────────────────────────────────────────
+    console.print()
+    console.print("[bold]Available Tools:[/bold]")
+    try:
+        from roxy.tools.registry import ToolRegistry
+        from roxy.tools.builtin import ReadFileTool, WebFetchTool
+
+        registry = ToolRegistry()
+        registry.register(ReadFileTool())
+        registry.register(WebFetchTool())
+
+        for t in registry.get_all():
+            risk_style = {"safe": "green", "caution": "yellow", "dangerous": "red"}.get(t.risk_level.value, "dim")
+            ws = "📁" if t.workspace_bounded else "🌐"
+            console.print(f"  [{risk_style}]{t.name}[/{risk_style}] {ws} {t.description}")
+    except Exception:
+        console.print("  [dim]Tools not available (install roxy with all dependencies)[/dim]")
+
     # ── Summary ──────────────────────────────────────────────────
     console.print()
     ok_count = sum(1 for r in results.values() if r["status"] == "ok")
@@ -106,6 +124,18 @@ def _doctor_json(cfg: Config, verbose: bool) -> None:
     health = ProviderHealth(cfg)
     results = health.check_all()
 
+    # Tool summary
+    tools_info: list[dict] = []
+    try:
+        from roxy.tools.registry import ToolRegistry
+        from roxy.tools.builtin import ReadFileTool, WebFetchTool
+        registry = ToolRegistry()
+        registry.register(ReadFileTool())
+        registry.register(WebFetchTool())
+        tools_info = registry.tool_summary()
+    except Exception:
+        pass
+
     report = {
         "config_path": str(cfg._path),
         "config_exists": cfg._path.exists(),
@@ -117,5 +147,6 @@ def _doctor_json(cfg: Config, verbose: bool) -> None:
         },
         "default_model": cfg.get("models.default"),
         "providers": {k: v for k, v in results.items()},
+        "tools": tools_info,
     }
     click.echo(json.dumps(report, indent=2, ensure_ascii=False))
