@@ -2,9 +2,9 @@
   <img src="assets/brand/roxy-logo.png" alt="ROXY" width="520">
 </h1>
 
-<p align="center">
-  <strong>Roxy Agent ✦</strong>
-  <br>
+<h1 align="left">Roxy Agent</h1>
+
+<p align="left">
   <a href="https://github.com/IBN-Spring/Roxy">Roxy Agent</a>
   ·
   <a href="docs/FORMAL_VERSION_PLAN.md">Documentation</a>
