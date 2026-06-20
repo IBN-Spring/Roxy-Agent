@@ -430,33 +430,77 @@ def _print_run_detail(run: dict) -> None:
 @research_cmd.command("digest")
 @click.option("--days", "-d", default=7, help="Look back this many days (default: 7).")
 @click.option("--source", "-s", default=None, help="Filter by source (rss, web, manual).")
-@click.option("--json", "as_json", is_flag=True, help="Output as JSON.")
-def research_digest(days: int, source: str | None, as_json: bool) -> None:
-    """Generate a digest of recent knowledge base entries.
+@click.option("--run", "-r", "run_id", default=None, help="Generate digest for a specific run (latest, or <id>).")
+@click.option("--group-by", "-g", default="source", help="Group by: source (default), date, or tag.")
+@click.option("--out", "-o", default=None, help="Write report to file (Markdown).")
+@click.option("--json", "as_json", is_flag=True, help="Output as structured JSON.")
+def research_digest(
+    days: int,
+    source: str | None,
+    run_id: str | None,
+    group_by: str,
+    out: str | None,
+    as_json: bool,
+) -> None:
+    """Generate a structured research digest from the knowledge base.
 
     \b
-    Example:
-      roxy research digest --days 3
+    Examples:
+      roxy research digest --days 3 --group-by source
+      roxy research digest --run latest --out digest.md
+      roxy research digest --json --group-by tag
     """
+    from pathlib import Path
     from roxy.research.digest import ResearchDigest
 
-    dg = ResearchDigest()
-    result = dg.generate(days=days, collected_via=source)
+    # Resolve --run latest
+    resolved_run = None
+    if run_id:
+        if run_id.lower() == "latest":
+            from roxy.research.run_history import RunHistory
+            rh = RunHistory()
+            latest = rh.latest_run()
+            if latest:
+                resolved_run = latest["run_id"]
+            else:
+                console.print("[yellow]No collection runs found. Use --days instead.[/yellow]")
+                return
+        else:
+            resolved_run = run_id
 
+    # Validate group_by
+    if group_by not in ("source", "date", "tag"):
+        console.print(f"[yellow]Invalid --group-by '{group_by}'. Use: source, date, or tag.[/yellow]")
+        return
+
+    dg = ResearchDigest()
+    result = dg.generate(
+        days=days,
+        collected_via=source,
+        run_id=resolved_run,
+        group_by=group_by,
+    )
+
+    # Write to file
+    if out:
+        dg.write_report(result, Path(out))
+        console.print(f"[green]✓[/green] Digest written to [cyan]{out}[/cyan]")
+
+    # JSON output
     if as_json:
         import json
-        click.echo(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+        # Remove report_md from JSON (it's the markdown version)
+        json_out = {k: v for k, v in result.items() if k != "report_md"}
+        click.echo(json.dumps(json_out, indent=2, ensure_ascii=False, default=str))
         return
 
-    console.print()
-    console.print(f"[bold]Research Digest[/bold] — last {days} day(s)")
-    console.print(f"[dim]Generated: {result['generated_at'][:19]}[/dim]")
-    console.print()
-
-    if result["entry_count"] == 0:
-        console.print("[yellow]No entries found in this period.[/yellow]")
-        console.print("Collect some: [cyan]roxy research collect --all[/cyan]")
-        return
-
-    console.print(result["summary_text"])
-    console.print(f"[dim]{result['entry_count']} entries from {len(result['by_source'])} source(s)[/dim]")
+    # Terminal display: show report_md directly
+    if not out:
+        console.print()
+        console.print(result["report_md"])
+    elif not as_json:
+        console.print(f"  Period: {result['period']}")
+        console.print(f"  Entries: {result['entry_count']}")
+        console.print(f"  Groups: {len(result['groups'])}")
+        if resolved_run:
+            console.print(f"  Run: [cyan]{resolved_run[:8]}[/cyan]")
