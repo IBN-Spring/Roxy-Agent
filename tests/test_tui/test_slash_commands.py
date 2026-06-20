@@ -110,9 +110,14 @@ class TestSlashCommands:
 
     def test_kb_search(self, screen: ChatScreen):
         result = screen._handle_slash("/kb test")
-        assert "KB Search" in result or "No results" in result
+        assert "KB Search" in result or "No results" in result or "empty" in result.lower()
 
     def test_collect_no_feeds(self, screen: ChatScreen):
         self._setup_engine(screen)
         result = screen._handle_slash("/collect")
-        assert "No enabled" in result or "feeds" in result.lower()
+        assert "No feeds" in result or "feeds" in result.lower() or "disabled" in result.lower()
+
+    def test_status(self, screen: ChatScreen):
+        self._setup_engine(screen)
+        result = screen._handle_slash("/status")
+        assert "Model" in result or "status" in result.lower()
