@@ -1,25 +1,27 @@
-<div align="center">
-<img src="assets/roxy-logo.png" alt="Roxy" width="320"/>
+<h1 align="center">
+  <img src="assets/brand/roxy-logo.png" alt="ROXY" width="520">
+</h1>
 
-# Roxy
+<p align="center">
+  <strong>垂直领域自主调研 Agent CLI/TUI</strong>
+  <br>
+  <sub>Monitor sources, build an OKF knowledge base, and chat with your research workspace.</sub>
+</p>
 
-**垂直领域自主调研 Agent**
-
-<p>
+<p align="center">
   <a href="https://github.com/IBN-Spring/Roxy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+"></a>
   <a href="#"><img src="https://img.shields.io/badge/version-0.6.0-green.svg" alt="Version 0.6.0"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-238%20passed-brightgreen.svg" alt="238 Tests"></a>
 </p>
 
-<p>
+<p align="center">
   <b>中文</b> | <a href="README_en.md">English</a>
 </p>
-</div>
 
-<div align="center">
-  <img src="assets/roxy-mascot.png" alt="Roxy" width="260"/>
-</div>
+<p align="center">
+  <img src="assets/mascot/roxy-readme-mascot.png" alt="Roxy mascot" width="180">
+</p>
 
 ---
 
