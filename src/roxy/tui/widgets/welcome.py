@@ -1,4 +1,4 @@
-"""Welcome panel for the Roxy chat TUI."""
+"""Welcome panel for the Roxy chat TUI — v1.0 product-style."""
 
 from __future__ import annotations
 
@@ -12,18 +12,8 @@ from textual.widget import Widget
 from roxy import __version__
 
 
-MASCOT = r"""
-      /\_/\
-   __/ o o \__
-  /  \  ^  /  \
-  |  /|___|\  |
-  |_/  roxy \_|
-      /_/\_\
-"""
-
-
 class WelcomePanel(Widget):
-    """A compact getting-started panel with model/key status."""
+    """Product landing screen. Tells you what Roxy is and what to do next."""
 
     DEFAULT_CSS = """
     WelcomePanel {
@@ -39,7 +29,9 @@ class WelcomePanel(Widget):
         session_id: str,
         workspace: Path,
         has_api_key: bool = False,
-        key_source: str = "",
+        evolution_status: str = "",
+        kb_entries: int = 0,
+        channels_count: int = 0,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -47,74 +39,73 @@ class WelcomePanel(Widget):
         self.session_id = session_id
         self.workspace = workspace
         self.has_api_key = has_api_key
-        self.key_source = key_source
+        self.evolution_status = evolution_status
+        self.kb_entries = kb_entries
+        self.channels_count = channels_count
 
     def render(self) -> Panel:
-        grid = Table.grid(expand=True)
-        grid.add_column(ratio=1)
-        grid.add_column(ratio=4)
-
+        # ── Title block ──────────────────────────────────────
         title = Text("Roxy", style="bold cyan")
-        title.append("  vertical research agent", style="dim")
+        title.append("  ", style="")
+        title.append("source-level self-evolving agent", style="dim italic")
 
-        info = Table.grid(padding=(0, 1))
-        info.add_column(style="cyan", no_wrap=True)
-        info.add_column()
-        info.add_row("version", f"v{__version__}")
-        info.add_row("model", self.model)
-        info.add_row("session", self.session_id)
-        info.add_row("workspace", str(self.workspace))
+        # ── Status bar ───────────────────────────────────────
+        status = Table.grid(padding=(0, 2))
+        status.add_column()
+        status.add_column()
+        status.add_column()
+        status.add_column()
 
-        tips = Text()
-        tips.append("\nTips for getting started\n", style="bold")
-        tips.append("• Ask a research question, or ask Roxy to search your knowledge base.\n")
-        tips.append("• Add feeds with ")
-        tips.append("roxy research feeds add \"Name\" \"URL\"", style="cyan")
-        tips.append(".\n")
-        tips.append("• Collect updates with ")
-        tips.append("roxy research collect --all", style="cyan")
-        tips.append(".\n")
-        tips.append("• Type ")
-        tips.append("/help", style="cyan")
-        tips.append(" to see all slash commands.\n")
-        tips.append("• Available tools: file_read, web_fetch, knowledge_query.", style="dim")
+        model_short = self.model.split("/")[-1] if "/" in self.model else (self.model or "—")
+        key_icon = "[green]●[/green]" if self.has_api_key else "[yellow]○[/yellow]"
+        kb_str = f"{self.kb_entries} entries" if self.kb_entries else "empty"
+        ch_str = f"{self.channels_count} channels" if self.channels_count else "—"
 
-        right = Table.grid()
-        right.add_row(title)
+        status.add_row(
+            Text(f"{key_icon} Model: {model_short}", style=""),
+            Text(f"Session: {self.session_id[:8]}", style="dim"),
+            Text(f"KB: {kb_str}", style="dim"),
+            Text(f"Channels: {ch_str}", style="dim"),
+        )
 
-        # No API key warning
+        # ── Tips ─────────────────────────────────────────────
+        tips = Table.grid(padding=(0, 1))
+        tips.add_column(style="cyan", width=16)
+        tips.add_column(style="dim")
+        tips.add_row("/status", "Runtime dashboard")
+        tips.add_row("/evolve", "Source evolution pipeline")
+        tips.add_row("/kb <query>", "Search knowledge base")
+        tips.add_row("/help", "Command palette")
+
+        # ── No key warning ───────────────────────────────────
+        warning = Text()
         if not self.has_api_key:
-            warning = Text()
-            warning.append("\n⚠  No API key configured\n\n", style="bold yellow")
             provider = self.model.split("/")[0] if "/" in self.model else "openai"
-            warning.append(f"Configure your {provider} key to start chatting:\n", style="dim")
-            warning.append(
-                f"  roxy config set models.providers.{provider}.api_key \"<your-key>\"\n",
-                style="cyan",
-            )
-            warning.append(
-                f"  or: export {provider.upper()}_API_KEY=\"<your-key>\"\n",
-                style="cyan",
-            )
-            warning.append("\nThen restart with ", style="dim")
-            warning.append("roxy chat", style="cyan")
-            warning.append(".", style="dim")
-            right.add_row(warning)
-        elif self.key_source == "env":
-            info.add_row("key source", "environment variable")
+            warning.append("\n", style="")
+            warning.append("╔══════════════════════════╗\n", style="yellow")
+            warning.append("║  No API key configured  ║\n", style="bold yellow")
+            warning.append("╚══════════════════════════╝\n", style="yellow")
+            warning.append(f"Configure: roxy config set models.providers.{provider}.api_key \"<key>\"\n", style="cyan")
+            warning.append(f"Or: export {provider.upper()}_API_KEY=\"<key>\"\n", style="cyan")
 
-        right.add_row(info)
-        right.add_row(tips)
+        # ── Assembly ─────────────────────────────────────────
+        content = Table.grid(padding=(1, 0))
+        content.add_row(title)
+        content.add_row(Text("Roxy sees failure → proposes fixes → patches itself → tests → waits for you to confirm.", style="dim"))
+        content.add_row("")
+        content.add_row(status)
+        if warning.plain:
+            content.add_row(warning)
+        content.add_row("")
+        content.add_row(tips)
 
-        grid.add_row(Text(MASCOT, style="cyan"), right)
-
-        subtitle = "enter a message below"
+        subtitle = "type a message or /help"
         if not self.has_api_key:
-            subtitle = "⚠ no API key — type /help for setup"
+            subtitle = "⚠ no API key — /key for setup"
 
         return Panel(
-            grid,
-            title="Roxy Agent",
+            content,
+            title=f"Roxy Agent v{__version__}",
             subtitle=subtitle,
             border_style="yellow" if not self.has_api_key else "cyan",
             padding=(1, 2),

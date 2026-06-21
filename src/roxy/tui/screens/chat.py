@@ -39,30 +39,30 @@ def _KNOWN_ENV_FOR(provider: str) -> str:
 # ── slash commands ──────────────────────────────────────────────
 
 HELP_TEXT = """\
-[b]Chat Commands[/b]
+[b]Agent[/b]
+  /status            Runtime dashboard
+  /key               API key status + configure
+  /model             Show or switch model
+  /doctor            Full system health check
 
-  /help              Show this message
-  /status            Master status overview
-  /key               Show API key status + configure
-  /clear             Clear the screen (session kept)
-  /doctor            Show provider, tools, channels, KB status
-  /model             Show current model
-  /model [name]      Switch model for this session
+[b]Evolution[/b]
+  /evolve            Source evolution pipeline status
+  /proposals         List improvement proposals
+  /proposal <id>     Show proposal detail
+
+[b]Knowledge[/b]
+  /kb <query>        Search knowledge base
+  /digest [N|latest] Research digest
+  /feeds             Feed source status
+  /topics            Research topics
+  /collect           Collect from feeds
+  /runs              Collection run history
+
+[b]Session[/b]
   /sessions          List recent sessions
-  /resume [id]       Resume a previous session
+  /resume <id>       Resume a session
+  /clear             Clear screen
   /exit              Exit Roxy
-
-[b]Research Commands[/b]
-
-  /topics            Show saved research topics
-  /feeds             Show feed source status
-  /collect           Collect from all enabled feeds
-  /collect topics    Collect from all saved topics
-  /runs              Show recent collection runs
-  /digest            Generate 7-day digest summary
-  /digest 30         30-day digest
-  /digest latest     Digest for latest collection run
-  /kb [query]        Search the knowledge base
 """
 
 
@@ -183,6 +183,9 @@ class ChatScreen(Screen):
             "/resume": lambda a: self._cmd_resume(a),
             "/exit": self._cmd_exit,
             "/status": self._cmd_status,
+            "/evolve": self._cmd_evolve,
+            "/proposals": self._cmd_proposals,
+            "/proposal": lambda a: self._cmd_proposal(a),
             "/topics": self._cmd_topics,
             "/feeds": self._cmd_feeds,
             "/collect": self._cmd_collect,
@@ -882,7 +885,23 @@ class ChatScreen(Screen):
             return
         model = self._engine.provider.resolve_model(self.model_override)
         has_key = self._engine.provider.has_api_key(model)
-        key_src = self._engine.provider.get_key_source(model)
+        try:
+            from roxy.knowledge.store import KnowledgeStore
+            ks = KnowledgeStore(); ks.init_db()
+            kb_entries = ks.get_stats().get("entry_count", 0)
+        except Exception:
+            kb_entries = 0
+        try:
+            from roxy.research.channels import ALL_CHANNELS
+            channels_count = len(ALL_CHANNELS)
+        except Exception:
+            channels_count = 0
+        try:
+            from roxy.evolution.planner import EvolutionPlanner
+            proposals = EvolutionPlanner().list_proposals()
+            evo_status = f"{len(proposals)} proposals" if proposals else "ready"
+        except Exception:
+            evo_status = ""
         slot = self.query_one("#welcome-slot", Static)
         slot.update(
             WelcomePanel(
@@ -890,7 +909,9 @@ class ChatScreen(Screen):
                 session_id=self._engine.session_id,
                 workspace=self._engine.workspace_root,
                 has_api_key=has_key,
-                key_source=key_src,
+                evolution_status=evo_status,
+                kb_entries=kb_entries,
+                channels_count=channels_count,
             ).render()
         )
 
@@ -932,3 +953,79 @@ class ChatScreen(Screen):
             )
         except Exception:
             pass  # DOM not mounted (e.g. unit tests)
+
+    # ── v1.0: Evolution dashboard ────────────────────────────
+
+    def _cmd_evolve(self, _arg: str) -> str:
+        """Show source evolution pipeline status."""
+        try:
+            from roxy.evolution.planner import EvolutionPlanner
+            proposals = EvolutionPlanner().list_proposals()
+
+            lines = ["[b]Source Evolution Pipeline[/b]", ""]
+
+            # Pipeline diagram
+            lines.append("  observe → propose → patch → test → review → merge")
+            lines.append("")
+
+            if not proposals:
+                lines.append("[dim]No proposals yet.[/dim]")
+                lines.append("")
+                lines.append("Start: [cyan]roxy evolve observe[/cyan]")
+                lines.append("Create: [cyan]roxy evolve propose --target tool-descriptions[/cyan]")
+                return "\n".join(lines)
+
+            # Active proposals
+            for p in proposals[:8]:
+                status_icon = {
+                    "draft": "[yellow]○[/yellow]",
+                    "patched": "[cyan]●[/cyan]",
+                    "tested": "[green]●[/green]",
+                    "merged": "[bold green]✓[/bold green]",
+                    "rejected": "[red]✗[/red]",
+                }.get(p.status, "●")
+                lines.append(f"  {status_icon} [cyan]{p.id[:24]}[/cyan] [{p.status}] {p.target}")
+                if p.patch_status:
+                    lines.append(f"       patch: {p.patch_status}  test: {p.test_status or '—'}")
+
+            lines.append("")
+            lines.append("[dim]/proposals  /proposal <id>  /evolve[/dim]")
+            return "\n".join(lines)
+        except Exception as exc:
+            return f"[red]{exc}[/red]"
+
+    def _cmd_proposals(self, _arg: str) -> str:
+        """List evolution proposals (shorthand for /evolve)."""
+        return self._cmd_evolve("")
+
+    def _cmd_proposal(self, arg: str) -> str:
+        """Show a specific proposal."""
+        proposal_id = arg.strip()
+        if not proposal_id:
+            return "[yellow]Usage: /proposal <id>[/yellow]\nUse /evolve to see all proposals."
+        try:
+            from roxy.evolution.planner import EvolutionPlanner
+            planner = EvolutionPlanner()
+            p = planner.show_proposal(proposal_id)
+        except ValueError as exc:
+            return f"[yellow]{exc}[/yellow]"
+        if p is None:
+            return f"[yellow]Proposal '{proposal_id}' not found.[/yellow]"
+        lines = [
+            f"[b]{p.title}[/b]",
+            f"  ID: [cyan]{p.id}[/cyan]  Status: {p.status}  Risk: {p.risk}",
+            f"  Problem: {p.problem[:200]}",
+            f"  Target files: {', '.join(p.target_files[:5])}",
+        ]
+        if p.test_commands:
+            lines.append(f"  Tests: {', '.join(p.test_commands[:3])}")
+        if p.report_path:
+            lines.append(f"  Report: [dim]{p.report_path}[/dim]")
+        lines.append("")
+        if p.status == "draft":
+            lines.append("Next: [cyan]roxy evolve patch prepare {p.id[:20]}[/cyan]")
+        if p.status == "patched":
+            lines.append("Next: [cyan]roxy evolve test {p.id[:20]}[/cyan]")
+        if p.patch_status == "applied" and p.test_status == "passed":
+            lines.append("Next: [cyan]roxy evolve review {p.id[:20]}[/cyan]")
+        return "\n".join(lines)

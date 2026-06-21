@@ -34,9 +34,9 @@ class TestSlashCommands:
 
     def test_help(self, screen: ChatScreen):
         result = screen._handle_slash("/help")
-        assert "Chat Commands" in result or "Slash Commands" in result
-        assert "/doctor" in result
-        assert "/model" in result
+        assert "Agent" in result or "Slash Commands" in result or "Chat Commands" in result
+        assert "/status" in result
+        assert "/evolve" in result
 
     def test_model_show(self, screen: ChatScreen):
         self._setup_engine(screen)
@@ -78,10 +78,10 @@ class TestSlashCommands:
         assert "Unknown command" in result
 
     def test_help_text_has_all_commands(self, screen: ChatScreen):
-        assert "/help" in HELP_TEXT
-        assert "/clear" in HELP_TEXT
-        assert "/doctor" in HELP_TEXT
-        assert "/model" in HELP_TEXT
+        # v1.0 test: verify key commands appear in help
+        assert "/status" in HELP_TEXT
+        assert "/evolve" in HELP_TEXT
+        assert "/kb" in HELP_TEXT
         assert "/sessions" in HELP_TEXT
         assert "/resume" in HELP_TEXT
         assert "/exit" in HELP_TEXT
@@ -103,6 +103,20 @@ class TestSlashCommands:
     def test_digest_30(self, screen: ChatScreen):
         result = screen._handle_slash("/digest 30")
         assert "Digest" in result or "digest" in result.lower() or "No entries" in result
+
+    # ── v1.0 evolution commands ────────────────────────────
+
+    def test_evolve_cmd(self, screen: ChatScreen):
+        result = screen._handle_slash("/evolve")
+        assert "Evolution" in result or "proposal" in result.lower() or "No proposals" in result
+
+    def test_proposals_cmd(self, screen: ChatScreen):
+        result = screen._handle_slash("/proposals")
+        assert "Evolution" in result or "proposal" in result.lower() or "No proposals" in result
+
+    def test_proposal_no_arg(self, screen: ChatScreen):
+        result = screen._handle_slash("/proposal")
+        assert "Usage" in result
 
     def test_kb_no_query(self, screen: ChatScreen):
         result = screen._handle_slash("/kb")
