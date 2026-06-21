@@ -29,9 +29,7 @@
   <a href="#"><img src="https://img.shields.io/badge/tests-294%20passed-brightgreen.svg" alt="294 Tests"></a>
 </p>
 
-<p align="center">
-  <img src="assets/roxy-mascot.png" alt="Roxy" width="200">
-</p>
+
 
 ---
 
