@@ -91,6 +91,14 @@ try:
 except ImportError:
     pass
 
+# v0.9: replicate + deploy
+try:
+    from roxy.cli.replicate_cmd import replicate_cmd, deploy_cmd
+    main.add_command(replicate_cmd)
+    main.add_command(deploy_cmd)
+except ImportError:
+    pass
+
 # dev tools
 try:
     from roxy.cli.dev_cmd import dev_cmd
