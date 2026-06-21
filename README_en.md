@@ -1,31 +1,53 @@
 <div align="center">
-<img src="assets/roxy-logo.png" alt="Roxy" width="320"/>
+  <img src="assets/brand/roxy-logo.png" alt="ROXY" width="520">
+</div>
 
-# Roxy
+<h1 align="center">Roxy Agent</h1>
 
-**Vertical-domain Autonomous Research Agent**
-
-<p>
-  <a href="https://github.com/IBN-Spring/Roxy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-0.6.0-green.svg" alt="Version 0.6.0"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-238%20passed-brightgreen.svg" alt="238 Tests"></a>
+<p align="center">
+  <strong>Source-level self-evolving agent</strong>
+  <br>
+  <sub>Roxy is built for a world where agent architecture changes every week. RAG, GraphRAG, LLM wiki, OKF knowledge stores, new tool protocols, and new model providers can all become replaceable modules. The core idea is that the agent can observe its own failures and evolve its own source code through a controlled, test-gated loop.</sub>
 </p>
 
-<p>
+<p align="center">
+  <a href="https://github.com/IBN-Spring/Roxy">Roxy Agent</a>
+  ·
+  <a href="docs/FORMAL_VERSION_PLAN.md">Documentation</a>
+  ·
+  <a href="https://github.com/IBN-Spring/Roxy/blob/main/LICENSE">License: MIT</a>
+  ·
+  Built by <a href="https://github.com/IBN-Spring">IBN-Spring</a>
+  ·
   <a href="README.md">中文</a> | <b>English</b>
 </p>
-</div>
 
-<div align="center">
-  <img src="assets/roxy-mascot.png" alt="Roxy" width="260"/>
-</div>
+<p align="center">
+  <a href="https://github.com/IBN-Spring/Roxy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <a href="#"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-0.9.0-green.svg" alt="Version 0.9.0"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-294%20passed-brightgreen.svg" alt="294 Tests"></a>
+</p>
+
+<p align="center">
+  <img src="assets/roxy-mascot.png" alt="Roxy" width="200">
+</p>
 
 ---
 
-Roxy is a research agent that monitors information sources, builds a knowledge base, and answers
-questions — all from the terminal. It speaks to RSS feeds, ArXiv, PubMed, and WeChat, stores
-findings in a portable knowledge format, and lets you chat with your research via a TUI.
+Roxy is a **source-level self-evolving agent**. It records traces, generates evals, proposes source-level improvements, applies deterministic patches in isolated branches, runs tests and evals, and merges only after human approval.
+
+## Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **Source-level self-evolution** | Discovers issues from traces, evals, doctor, and runtime results. Generates source-level proposals and completes controlled improvements via `patch → test → review → merge`. |
+| **Controlled evolution safety gates** | All patches run in `evolve/<proposal-id>` isolated branches. Command allowlist. 5 merge gates with `--confirm`. No auto-push, no auto-deploy. |
+| **Dynamic skills & tool descriptions** | Identifies tool-call, prompt, and skill expression issues from failure cases, generating reviewable proposals or deterministic patches. |
+| **Replaceable knowledge system** | Currently uses Google OKF standard knowledge format with JSON Schema, JSONL, FTS5, import/export. Future RAG, GraphRAG, LLM wiki can all be modular replacements. |
+| **Pluggable channel layer** | RSS, ArXiv, PubMed, Web, WeChat, Agent-Reach via Channel protocol — all replaceable information inputs. |
+| **Replicable runtime** | `replicate export/validate/deploy plan` exports source, skills, OKF, eval seeds, and sanitized config templates for auditable migration. |
+| **TUI-first workbench** | Chat, status, research, evolve, replicate — all from the terminal. |
 
 ## Quick Start
 
@@ -34,101 +56,30 @@ git clone https://github.com/IBN-Spring/Roxy.git
 cd Roxy
 pip install -e ".[tui]"
 
-roxy init --yes --name "Your Name" --domain "bioinformatics"
-roxy config set models.providers.deepseek.api_key "sk-..."
-roxy chat
-```
-
-Or with environment variables:
-```bash
+roxy init --yes --name "Your Name"
 export DEEPSEEK_API_KEY="sk-..."
 roxy chat
 ```
 
-## Architecture
-
-```
-roxy chat                     # Textual TUI — research workbench
-  │
-  ├── /status /feeds /collect /runs /digest /kb /topics
-  ├── QueryEngine              # Multi-turn agent loop + tool calling
-  │   ├── file_read            # Workspace-bounded file reader
-  │   ├── web_fetch            # GET-only web page fetcher
-  │   └── knowledge_query      # Search knowledge base
-  ├── ContextCompactor         # Micro + auto + circuit breaker
-  └── Safety                   # Permission system + risk levels + sandbox
-
-roxy monitor run               # Unified collection — feeds + topics
-  ├── RSSChannel               # Any RSS/Atom feed
-  ├── ArXivChannel             # Academic papers (free API, no key)
-  ├── PubMedChannel            # NCBI papers (free API, no key)
-  ├── WechatChannel            # WeChat articles (read-only adapter)
-  └── AgentReachWebChannel     # External CLI bridge
-
-roxy knowledge                 # OKF v0.1 knowledge base
-  ├── SQLite + FTS5            # Runtime store
-  ├── JSONL export/import      # Portable interchange
-  └── Schema validator         # Strict OKF compliance
-
-roxy eval                      # Controlled evolution
-  ├── seeds generate           # Extract eval cases from traces
-  ├── eval run                 # Baseline evaluation (mock or live)
-  ├── eval propose             # Improvement suggestions (no auto-apply)
-  └── eval compare             # Side-by-side version diff
-```
-
-## Features
-
-| Category | Feature |
-|----------|---------|
-| **Agent** | TUI chat, streaming, slash commands, session resume |
-| | Tool calling (file_read/web_fetch/knowledge_query) + permission gate |
-| | Context compaction (Micro + Auto + circuit breaker) |
-| **Research** | 5 channels: RSS, ArXiv, PubMed, WeChat, Agent-Reach |
-| | Source management: state tracking, enable/disable, error tracking |
-| | Research topics: saved queries, multi-channel collection |
-| | Digest: markdown reports grouped by source/date/tag |
-| | Run history: collection tracking with per-feed metrics |
-| **Knowledge** | OKF v0.1: portable JSONL + JSON Schema validation |
-| | FTS5 search with tag/source/date filters |
-| | JSONL import/export with dedup |
-| **Evolution** | Trace store: privacy-safe recording of every turn |
-| | Eval harness: mock/live scoring + baseline reports |
-| | Proposal generator: failure analysis (no auto-apply) |
-| | Harness compare: improvement/regression detection |
-| **Safety** | Risk levels: safe < caution < dangerous < blocked |
-| | Workspace sandbox, approval gate, secrets masking |
-| | Evolution proposals never auto-applied |
-
-## Research Workflow
+## Controlled Evolution
 
 ```bash
-roxy research feeds add "Hacker News" "https://hnrss.org/frontpage"
-roxy research topics add "single cell RNA-seq" --channels arxiv,pubmed
-roxy monitor run
-roxy knowledge search "transformer"
-roxy research digest --days 7 --out weekly.md
+roxy eval seeds generate --out seeds.jsonl
+roxy eval run seeds.jsonl --out baseline.json
+roxy evolve observe --from-eval baseline.json
+roxy evolve propose --target tool-descriptions --from-eval baseline.json
+roxy evolve patch prepare <proposal-id>
+roxy evolve patch apply <proposal-id>
+roxy evolve test <proposal-id>
+roxy evolve review <proposal-id>
+roxy evolve merge <proposal-id> --confirm
 ```
 
-All within the TUI: `/collect` `/runs` `/digest` `/kb transformer` `/feeds`
+Pipeline: `trace → seed → run → observe → propose → patch → test → review → compare → merge --confirm`
 
 ## TUI Commands
 
-| Command | Action |
-|---------|--------|
-| `/help` | Show all commands |
-| `/status` | Master overview |
-| `/doctor` | Health check |
-| `/model` | Show or switch model |
-| `/key` | API key status |
-| `/feeds` | Feed source status |
-| `/collect` | Collect from all feeds |
-| `/runs` | Recent runs |
-| `/digest` | Research digest |
-| `/kb <query>` | Search KB |
-| `/topics` | Research topics |
-| `/sessions` | List sessions |
-| `/resume <id>` | Resume session |
+`/help` `/status` `/doctor` `/model` `/key` `/feeds` `/collect` `/runs` `/digest` `/kb` `/topics` `/sessions` `/resume` `/clear` `/exit`
 
 ## Channels
 
@@ -140,20 +91,12 @@ All within the TUI: `/collect` `/runs` `/digest` `/kb transformer` `/feeds`
 | `wechat` | 1 · Config | `research.wechat.db_path` |
 | `agent_reach_web` | 1 · External | `agent-reach` on PATH |
 
-## Knowledge Format (OKF v0.1)
+## Replication
 
 ```bash
-roxy knowledge export --out kb.jsonl
-roxy knowledge import kb.jsonl
-roxy knowledge validate kb.jsonl
-```
-
-## Controlled Evolution
-
-Records, evaluates, proposes — **never auto-applies**. Humans decide.
-
-```
-trace → seed → run → report → propose → compare → review → apply
+roxy replicate export --out roxy-bundle.zip
+roxy replicate validate roxy-bundle.zip
+roxy deploy plan --from roxy-bundle.zip
 ```
 
 ## Commands
@@ -164,26 +107,24 @@ roxy knowledge search/stats/export/import/validate/schema
 roxy research feeds/topics/channels/collect/digest/runs
 roxy monitor run [--json]
 roxy traces list/show/export
-roxy eval seeds/run/report/propose/compare
+roxy eval seeds generate/run/report/propose/compare
+roxy evolve observe/propose/patch/test/review/merge
+roxy replicate export/validate
+roxy deploy plan
 roxy dev check
 ```
 
 ## Safety
 
-- Workspace-bounded: `file_read` cannot escape workspace
-- Risk levels: safe < caution < dangerous < blocked
-- `requires_approval` enforced by ToolExecutor
-- WeChat DB read-only (`mode=ro`)
-- Secrets masked in all outputs
-- Proposals never auto-applied
-
-## Development
-
-```bash
-pip install -e ".[dev]"
-python -m pytest tests/          # 238 tests
-python -m roxy dev check          # Release check
-```
+| Mechanism | Description |
+|-----------|-------------|
+| Workspace sandbox | Bounded tools cannot escape workspace |
+| Risk levels | `safe < caution < dangerous < blocked` |
+| Approval gate | requires_approval enforced by ToolExecutor |
+| Command allowlist | evolve test only runs approved commands |
+| Merge gates | 5 gates: patch_status, test_status, report, clean tree, eval |
+| Secret masking | API keys masked in all outputs |
+| No auto-apply | Proposals and patches never auto-merged |
 
 ## Roadmap
 
@@ -197,6 +138,14 @@ python -m roxy dev check          # Release check
 | v0.7 | Source-Level Proposals: RFCs from traces/eval/channel evidence |
 | v0.8 | Sandboxed Source Evolution: deterministic patches, allowlisted tests, merge safety gates, human-confirmed |
 | v0.9 | Self-Deployment & Runtime Replication: bundle export/validate, deploy plans, no secrets |
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+python -m pytest tests/          # 294 tests
+python -m roxy dev check
+```
 
 ## License
 
