@@ -84,6 +84,13 @@ try:
 except ImportError:
     pass
 
+# Phase 5/7: evolution
+try:
+    from roxy.cli.evolve_cmd import evolve_cmd
+    main.add_command(evolve_cmd)
+except ImportError:
+    pass
+
 # dev tools
 try:
     from roxy.cli.dev_cmd import dev_cmd
