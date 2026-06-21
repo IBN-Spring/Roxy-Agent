@@ -227,7 +227,7 @@ python -m roxy dev check
 bash scripts/demo.sh
 ```
 
-当前测试规模：`238 passed`。
+当前测试规模：`279 passed`。
 
 ## 路线图
 
@@ -238,6 +238,9 @@ bash scripts/demo.sh
 | v0.4 | External Capability Layer：频道协议、学术频道、研究方向、统一监控 |
 | v0.5 | Controlled Evolution：trace、eval、proposal、compare |
 | v0.6 | Release Hardening：文档、dev check、版本一致性、发布清单 |
+| **v0.7** | **Source-Level Proposals：从 traces/eval/channel 生成源码级 RFC，evidence 真实可追溯** |
+| **v0.8** | **Sandboxed Source Evolution：隔离分支确定性 patch、白名单测试、审查报告、5 道 merge 安全门** |
+| v0.9 | Self-Deployment & Runtime Replication（计划中） |
 
 详见 [docs/FORMAL_VERSION_PLAN.md](docs/FORMAL_VERSION_PLAN.md)。
 

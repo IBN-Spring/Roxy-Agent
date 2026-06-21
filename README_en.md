@@ -194,6 +194,9 @@ python -m roxy dev check          # Release check
 | v0.4 | External Capability: channel contract, topics, unified monitor |
 | v0.5 | Controlled Evolution: traces, eval, proposals (no auto-apply) |
 | v0.6 | Release Hardening |
+| **v0.7** | **Source-Level Proposals: RFCs from traces/eval/channel evidence** |
+| **v0.8** | **Sandboxed Source Evolution: deterministic patches, allowlisted tests, merge safety gates, human-confirmed** |
+| v0.9 | Self-Deployment & Runtime Replication (planned) |
 
 ## License
 
