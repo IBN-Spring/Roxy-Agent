@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
@@ -255,10 +256,14 @@ class QueryEngine:
         response = await litellm.acompletion(**kwargs)
         choice = response.get("choices", [{}])[0]
         message = choice.get("message", {})
+        message = _to_plain_json(message)
 
         return {
             "content": message.get("content", ""),
-            "tool_calls": message.get("tool_calls", []),
+            "tool_calls": [
+                _normalize_tool_call(tc)
+                for tc in (message.get("tool_calls") or [])
+            ],
             "role": message.get("role", "assistant"),
         }
 
@@ -300,3 +305,69 @@ def _record_trace(session_id: str, user_input: str, model: str,
         })
     except Exception:
         pass  # Trace recording is best-effort
+
+
+def _to_plain_json(value: Any) -> Any:
+    """Convert LiteLLM/OpenAI objects into JSON-serializable Python values."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, dict):
+        return {str(k): _to_plain_json(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_to_plain_json(v) for v in value]
+    if is_dataclass(value):
+        return _to_plain_json(asdict(value))
+
+    # Pydantic v2 / LiteLLM model objects
+    model_dump = getattr(value, "model_dump", None)
+    if callable(model_dump):
+        try:
+            return _to_plain_json(model_dump())
+        except Exception:
+            pass
+
+    # Pydantic v1 / OpenAI model objects
+    to_dict = getattr(value, "dict", None)
+    if callable(to_dict):
+        try:
+            return _to_plain_json(to_dict())
+        except Exception:
+            pass
+
+    if hasattr(value, "__dict__"):
+        data = {
+            k: v for k, v in vars(value).items()
+            if not k.startswith("_") and not callable(v)
+        }
+        if data:
+            return _to_plain_json(data)
+
+    return str(value)
+
+
+def _normalize_tool_call(tool_call: Any) -> dict[str, Any]:
+    """Return an OpenAI-style tool call dict with a plain dict function field."""
+    tc = _to_plain_json(tool_call)
+    if not isinstance(tc, dict):
+        return {"id": "", "type": "function", "function": {"name": "", "arguments": "{}"}}
+
+    func = _to_plain_json(tc.get("function", {}))
+    if not isinstance(func, dict):
+        func = {"name": str(func), "arguments": "{}"}
+
+    arguments = func.get("arguments", "{}")
+    if isinstance(arguments, (dict, list)):
+        arguments = json.dumps(arguments, ensure_ascii=False)
+    elif arguments is None:
+        arguments = "{}"
+    else:
+        arguments = str(arguments)
+
+    return {
+        "id": str(tc.get("id", "")),
+        "type": str(tc.get("type", "function")),
+        "function": {
+            "name": str(func.get("name", "")),
+            "arguments": arguments,
+        },
+    }

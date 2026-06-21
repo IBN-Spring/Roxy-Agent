@@ -1,164 +1,272 @@
-"""Roxy mascot widget — animated ASCII art for agent states."""
+"""Roxy pixel status widget.
+
+The TUI cannot rely on GIF/image protocols across terminals, so this widget
+renders small pixel-art frames with ANSI background colors. It keeps the old
+MascotWidget API while avoiding character-art mascots and IP-specific imagery.
+"""
 
 from __future__ import annotations
 
+from rich.text import Text
 from textual.widgets import Static
-from textual import work
 
-# ASCII art frames
-IDLE_FRAME_0 = r"""
-     /\_/\
-   _/ o o \_
-  /  \  ~  /  \
-  |  /|___|\  |
-  |_/  roxy \_|
-      /_/\_\
-"""
 
-IDLE_FRAME_1 = r"""
-     /\_/\
-   _/ o o \_
-  /  \  -  /  \
-  |  /|___|\  |
-  |_/  roxy \_|
-      /_/\_\
-"""
+PALETTE = {
+    ".": "",
+    "B": "#12315f",
+    "b": "#1d5fd1",
+    "C": "#38d8ff",
+    "c": "#0e9fc9",
+    "W": "#dff8ff",
+    "Y": "#f7d56b",
+    "G": "#41e08b",
+    "R": "#ff5c6c",
+    "P": "#9b7cff",
+}
+
+
+IDLE_FRAMES = [
+    [
+        "............",
+        "...BBBBBB...",
+        "..BCCCCCCB..",
+        "..BC....CB..",
+        "..BC.>>.CB..",
+        "..BCCCCCCB..",
+        "...BBBBBB...",
+    ],
+    [
+        "............",
+        "...BBBBBB...",
+        "..BCCCCCCB..",
+        "..BC....CB..",
+        "..BC.>_.CB..",
+        "..BCCCCCCB..",
+        "...BBBBBB...",
+    ],
+]
 
 THINKING_FRAMES = [
-    r"""
-     /\_/\
-   _/ o o \_
-  /  \  ·  /  \
-  |  /|___|\  |
-  |_/  roxy \_|
-      /_/\_\
-""",
-    r"""
-     /\_/\
-   _/ - - \_
-  /  \  ·  /  \
-  |  /|___|\  |
-  |_/  roxy \_|
-      /_/\_\
-""",
-    r"""
-     /\_/\
-   _/ o o \_
-  /  \  ·  /  \
-  |  /|___|\  |
-  |_/  roxy \_|
-      /_/\_\
-""",
+    [
+        "...C........",
+        ".....BBBB...",
+        "....BCCCCB..",
+        "....BC..CB..",
+        "..C.BC.>.B..",
+        "....BCCCCB..",
+        "......C.....",
+    ],
+    [
+        "......C.....",
+        ".....BBBB...",
+        "...CBCCCCB..",
+        "....BC..CB..",
+        "....BC.:CB.C",
+        "....BCCCCB..",
+        "............",
+    ],
+    [
+        "............",
+        "....CBBBB...",
+        "....BCCCCB..",
+        ".C..BC..CB..",
+        "....BC.*CB..",
+        "....BCCCCB..",
+        ".........C..",
+    ],
 ]
 
 TYPING_FRAMES = [
-    r"""
-     /\_/\
-   _/ > < \_
-  /  \  ^  /  \
-  |  /|___|\  |
-  |_/  roxy \_|
-      /_/\_\
-""",
-    r"""
-     /\_/\
-   _/ o o \_
-  /  \  ^  /  \
-  |  /|___|\  |
-  |_/  roxy \_|
-      /_/\_\
-""",
+    [
+        "............",
+        "...BBBBBB...",
+        "..BCCCCCCB..",
+        "..BC....CB..",
+        "..BC.>_.CB..",
+        "..BCCCCCCB..",
+        "...BBBBBB...",
+    ],
+    [
+        "............",
+        "...BBBBBB...",
+        "..BCCCCCCB..",
+        "..BC....CB..",
+        "..BC.> .CB..",
+        "..BCCCCCCB..",
+        "...BBBBBB...",
+    ],
 ]
 
-MAGIC_FRAMES = [
-    r"""
-     /\_/\
-   _/ * * \_
-  /  \  ~  /  \
-  |  /|___|\  |
-  |_/  roxy \_|
-      /_/\_\
-""",
-    r"""
-     /\_/\
-   _/ o o \_
-  /  \  *  /  \
-  |  /|___|\  |
-  |_/  roxy \_|
-      /_/\_\
-""",
+TOOL_FRAMES = [
+    [
+        "............",
+        "...BBBBBB...",
+        "..BCCCCCCB..",
+        "..BCYYYYCB..",
+        "..BC..>.CB..",
+        "..BCCCCCCB..",
+        "...BBBBBB...",
+    ],
+    [
+        "............",
+        "...BBBBBB...",
+        "..BCCCCCCB..",
+        "..BC..>.CB..",
+        "..BCYYYYCB..",
+        "..BCCCCCCB..",
+        "...BBBBBB...",
+    ],
+]
+
+SUCCESS_FRAMES = [
+    [
+        "............",
+        "...GGGGGG...",
+        "..GCCCCCCG..",
+        "..GC....CG..",
+        "..GC.//.CG..",
+        "..GCCCCCCG..",
+        "...GGGGGG...",
+    ],
+    [
+        "....G..G....",
+        "...GGGGGG...",
+        "..GCCCCCCG..",
+        "..GC....CG..",
+        "..GC.//.CG..",
+        "..GCCCCCCG..",
+        "...GGGGGG...",
+    ],
+]
+
+ERROR_FRAMES = [
+    [
+        "............",
+        "...RRRRRR...",
+        "..RCCCCCCR..",
+        "..RC....CR..",
+        "..RC.!!.CR..",
+        "..RCCCCCCR..",
+        "...RRRRRR...",
+    ],
+    [
+        "............",
+        "..RRRRRR....",
+        ".RCCCCCCR...",
+        ".RC....CR...",
+        ".RC.!!.CR...",
+        ".RCCCCCCR...",
+        "..RRRRRR....",
+    ],
 ]
 
 
 class MascotWidget(Static):
-    """Animated Roxy mascot that responds to agent state.
+    """Animated pixel status indicator for agent state.
 
-    States: idle, thinking, typing, magic, hop.
-    Uses set_interval to cycle ASCII frames.
+    States: idle, thinking, typing, tool/magic, success, error.
+    Frames are rendered as colored two-space cells, so they look like pixels
+    without depending on terminal image protocols.
     """
 
     DEFAULT_CSS = """
     MascotWidget {
-        width: 20;
+        width: 28;
         height: 8;
         margin: 0 1;
-        color: $text;
+        content-align: center middle;
     }
     """
 
     FRAMES = {
-        "idle": [IDLE_FRAME_0, IDLE_FRAME_1],
+        "idle": IDLE_FRAMES,
         "thinking": THINKING_FRAMES,
         "typing": TYPING_FRAMES,
-        "magic": MAGIC_FRAMES,
+        "tool": TOOL_FRAMES,
+        "magic": TOOL_FRAMES,
+        "success": SUCCESS_FRAMES,
+        "error": ERROR_FRAMES,
+    }
+
+    SPEEDS = {
+        "idle": 1.2,
+        "thinking": 0.35,
+        "typing": 0.28,
+        "tool": 0.35,
+        "magic": 0.35,
+        "success": 0.4,
+        "error": 0.25,
     }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._state: str = "idle"
-        self._frame_index: int = 0
-        self._timer: work.Worker | None = None
+        self._state = "idle"
+        self._frame_index = 0
+        self._timer = None
+        self._current = self._render_frame(IDLE_FRAMES[0])
 
     def on_mount(self) -> None:
-        """Start idle animation."""
+        """Start idle animation after the widget is mounted."""
         self._start_animation("idle")
 
     def set_state(self, state: str) -> None:
-        """Switch to a new state: idle, thinking, typing, magic."""
-        if state == self._state:
+        """Switch to a new animation state."""
+        normalized = state if state in self.FRAMES else "idle"
+        if normalized == self._state:
             return
-        self._state = state
+        self._state = normalized
+        self._start_animation(normalized, self.SPEEDS.get(normalized, 0.5))
 
-        # Different speeds per state
-        if state == "idle":
-            interval = 2.0
-        elif state == "thinking":
-            interval = 0.6
-        elif state == "typing":
-            interval = 0.4
-        else:
-            interval = 0.5
-
-        self._start_animation(state, interval)
-
-    def _start_animation(self, state: str, interval: float = 2.0) -> None:
+    def _start_animation(self, state: str, interval: float | None = None) -> None:
         if self._timer:
-            self._timer.cancel()
-        frames = self.FRAMES.get(state, [IDLE_FRAME_0])
+            stop = getattr(self._timer, "stop", None) or getattr(self._timer, "cancel", None)
+            if stop:
+                stop()
+            self._timer = None
+
+        frames = self.FRAMES.get(state, IDLE_FRAMES)
         self._frame_index = 0
-        self._current = frames[0] if frames else ""
-        if frames:
-            self.refresh()
-        if len(frames) > 1:
-            self._timer = self.set_interval(interval, self._next_frame)
+        self._current = self._render_frame(frames[0])
+        self._safe_update()
+
+        if self.is_mounted and len(frames) > 1:
+            try:
+                self._timer = self.set_interval(
+                    interval or self.SPEEDS.get(state, 0.5),
+                    self._next_frame,
+                )
+            except Exception:
+                self._timer = None
 
     def _next_frame(self) -> None:
-        frames = self.FRAMES.get(self._state, [IDLE_FRAME_0])
-        if not frames:
-            return
+        frames = self.FRAMES.get(self._state, IDLE_FRAMES)
         self._frame_index = (self._frame_index + 1) % len(frames)
-        self._current = frames[self._frame_index]
-        self.refresh()
+        self._current = self._render_frame(frames[self._frame_index])
+        self._safe_update()
+
+    def _safe_update(self) -> None:
+        if not self.is_mounted:
+            return
+        try:
+            self.update(self._current)
+        except Exception:
+            # Allows unit tests and local previews outside a running Textual app.
+            pass
+
+    def _render_frame(self, frame: list[str]) -> Text:
+        text = Text()
+        for row_index, row in enumerate(frame):
+            for cell in row:
+                color = PALETTE.get(cell, "")
+                if color:
+                    text.append("  ", style=f"on {color}")
+                elif cell == ".":
+                    text.append("  ")
+                else:
+                    text.append(f"{cell} ", style="bold #dff8ff")
+            if row_index < len(frame) - 1:
+                text.append("\n")
+        return text
 
     def render(self):
-        return self._current if hasattr(self, '_current') else ""
+        return self._current

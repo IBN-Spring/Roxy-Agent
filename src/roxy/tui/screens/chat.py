@@ -963,13 +963,21 @@ class ChatScreen(Screen):
 
     def _format_tool_summary(self, log: list[dict]) -> str:
         lines = []
+        total_results = 0
         for batch in log:
             calls = batch.get("calls", [])
             results = batch.get("results", [])
-            lines.append(f"🔧 Called: {', '.join(calls)}")
-            for r in results:
+            total_results += len(results)
+            call_names = ", ".join(calls[:3])
+            if len(calls) > 3:
+                call_names += f", +{len(calls) - 3} more"
+            lines.append(f"[b]Tools[/b]: {call_names}")
+            for r in results[:3]:
                 icon = "✓" if r["success"] else "✗"
-                lines.append(f"  {icon} {r['tool']}: {r['preview'][:120]}")
+                preview = " ".join(r["preview"].split())
+                lines.append(f"  {icon} {r['tool']}: {preview[:90]}")
+        if total_results > 3:
+            lines.append(f"  [dim]... {total_results - 3} more tool result(s) hidden[/dim]")
         return "\n".join(lines)
 
     # ── message rendering helpers ────────────────────────────────

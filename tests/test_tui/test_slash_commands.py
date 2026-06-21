@@ -135,3 +135,20 @@ class TestSlashCommands:
         self._setup_engine(screen)
         result = screen._handle_slash("/status")
         assert "Dashboard" in result or "model" in result.lower()
+
+    def test_tool_summary_is_compact(self, screen: ChatScreen):
+        log = [{
+            "calls": ["web_fetch", "web_fetch", "web_fetch", "web_fetch"],
+            "results": [
+                {"tool": "web_fetch", "success": True, "preview": "a" * 200},
+                {"tool": "web_fetch", "success": False, "preview": "b" * 200},
+                {"tool": "knowledge_query", "success": True, "preview": "c" * 200},
+                {"tool": "web_fetch", "success": True, "preview": "d" * 200},
+            ],
+        }]
+
+        result = screen._format_tool_summary(log)
+
+        assert "+1 more" in result
+        assert "1 more tool result" in result
+        assert len(result.splitlines()) == 5

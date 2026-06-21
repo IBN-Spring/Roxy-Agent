@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "roxy"
-version = "0.6.0"
+version = "1.0.0"
 description = "Roxy — A vertical-domain autonomous research Agent CLI/TUI"
 readme = "README.md"
 license = { text = "MIT" }

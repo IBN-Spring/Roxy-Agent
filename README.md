@@ -25,8 +25,8 @@
 <p align="center">
   <a href="https://github.com/IBN-Spring/Roxy-Agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-0.9.0-green.svg" alt="Version 0.9.0"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-294%20passed-brightgreen.svg" alt="294 Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-1.0.0-green.svg" alt="Version 0.9.0"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-308%20passed-brightgreen.svg" alt="294 Tests"></a>
 </p>
 
 
@@ -166,7 +166,7 @@ roxy dev check [--quick]      # 发布检查
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest tests/          # 294 tests
+python -m pytest tests/          # 308 tests
 python -m roxy dev check          # 发布就绪检查
 bash scripts/demo.sh              # 端到端烟雾测试
 ```
