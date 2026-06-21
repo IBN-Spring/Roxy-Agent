@@ -2,9 +2,9 @@
   <img src="assets/brand/roxy-logo.png" alt="ROXY" width="520">
 </h1>
 
-<p align="center">
-  <strong>Roxy Agent ✦</strong>
-  <br>
+<h1 align="left">Roxy Agent</h1>
+
+<p align="left">
   <a href="https://github.com/IBN-Spring/Roxy">Roxy Agent</a>
   ·
   <a href="docs/FORMAL_VERSION_PLAN.md">Documentation</a>
@@ -31,16 +31,16 @@
 
 ---
 
-Roxy 是一个面向垂直领域研究的 Agent CLI/TUI。它不是一次性搜索工具，而是一个长期运行的研究工作台：持续追踪 RSS、ArXiv、PubMed、网页和微信公众号等来源，把发现写入受 Google OKF 思路启发的结构化知识库，再通过聊天、搜索、摘要和评估闭环帮助你不断积累领域知识。
+Roxy 是一个面向垂直领域研究的 Agent CLI/TUI，围绕自我进化、动态 skills 和可迁移知识库构建。它会持续追踪 RSS、ArXiv、PubMed、网页和微信公众号等来源，把发现写入 Google OKF 标准格式知识库，并通过聊天、搜索、摘要和评估闭环不断积累领域知识。
 
-Roxy 的目标是做一个更像 Claude Code / Hermes 的终端 Agent，但核心场景不是写代码，而是 **自主调研、知识沉淀和受控自进化**。
+Roxy 的核心目标是让 Agent 在使用中形成自己的研究能力：从真实交互中沉淀 trace，生成 eval，提出 prompt、tool 和 skill 改进建议；同时自生产、自维护一套可导出、可校验、可迁移的长期知识库。
 
 ## 核心特点
 
 | 特点 | 说明 |
 |------|------|
 | **受控自进化引擎** | 从真实交互中记录 trace，生成 eval seeds，运行 baseline，提出改进建议，并用 compare 检查提升与退化。不会自动改 prompt、工具描述或核心代码，所有进化都经过人工确认。 |
-| **Google OKF-inspired 知识库** | 使用 OKF v0.1 组织来源、条目、主题、洞察和采集方式。支持 JSON Schema 校验、JSONL 导入导出、SQLite + FTS5 搜索和自动去重，让知识库成为可迁移、可验证、可查询的研究资产。 |
+| **Google OKF 标准格式知识库** | 使用 OKF v0.1 标准格式组织来源、条目、主题、洞察和采集方式。支持 JSON Schema 校验、JSONL 导入导出、SQLite + FTS5 搜索和自动去重，让知识库成为可迁移、可验证、可查询的研究资产。 |
 | **全网络研究采集层** | 通过统一 Channel 协议接入 RSS、ArXiv、PubMed、网页、微信公众号和外部 Agent-Reach 能力。每个 channel 都有健康检查、采集接口、修复提示和能力摘要。 |
 | **真实终端工作台** | TUI 内支持流式对话、工具调用可视化、slash commands、session 恢复、模型切换、状态检查、知识库搜索、采集和摘要。 |
 | **持续领域监控** | 保存长期关注的研究方向和信息源，通过 `roxy monitor run` 定时采集 feeds + topics，生成 run history、digest 和可回溯的知识沉淀。 |
