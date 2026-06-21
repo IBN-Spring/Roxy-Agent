@@ -1,6 +1,7 @@
 """"roxy evolve" — source-level controlled evolution."""
 
 import json
+import re
 from pathlib import Path
 
 import click
@@ -152,8 +153,9 @@ def evolve_patch() -> None:
 
 @evolve_patch.command("prepare")
 @click.argument("proposal_id")
-def patch_prepare(proposal_id: str) -> None:
-    """Create an isolated git branch for a proposal."""
+@click.option("--force", is_flag=True, help="Overwrite existing evolution branch.")
+def patch_prepare(proposal_id: str, force: bool) -> None:
+    """Create an isolated git branch for a proposal. Must be on main branch."""
     proposal = _load_proposal(proposal_id)
     from roxy.evolution.workspace import EvolutionWorkspace
     ws = EvolutionWorkspace()
@@ -161,7 +163,11 @@ def patch_prepare(proposal_id: str) -> None:
     if not info.is_clean:
         console.print("[yellow]Working tree not clean. Commit or stash first.[/yellow]")
         raise SystemExit(1)
-    branch = ws.prepare(proposal.id)
+    try:
+        branch = ws.prepare(proposal.id, force=force)
+    except RuntimeError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1)
     proposal.branch = branch
     proposal.patch_status = "prepared"
     proposal.status = "patched"
@@ -263,15 +269,54 @@ def evolve_review(proposal_id: str) -> None:
 @click.argument("proposal_id")
 @click.option("--confirm", is_flag=True, help="Actually merge. Without --confirm, dry-run only.")
 def evolve_merge(proposal_id: str, confirm: bool) -> None:
-    """Merge evolution branch into main. Requires --confirm."""
+    """Merge evolution branch into main. Requires --confirm and safety gates."""
     proposal = _load_proposal(proposal_id)
     if not confirm:
         console.print(f"[dim]Dry-run: would merge 'evolve/{proposal.id}' into main.[/dim]")
         console.print("[dim]Use --confirm to actually merge.[/dim]")
         console.print(f"  Rollback: git checkout main && git branch -D evolve/{proposal.id}")
         return
+
+    # ── Safety gates ──────────────────────────────────────
+    failures = []
+
+    # Gate 1: patch must be applied
+    if proposal.patch_status != "applied":
+        failures.append(f"Patch not applied (status: {proposal.patch_status}). Run: roxy evolve patch apply {proposal.id[:20]}")
+
+    # Gate 2: tests must pass
+    if proposal.test_status != "passed":
+        failures.append(f"Tests not passing (status: {proposal.test_status}). Run: roxy evolve test {proposal.id[:20]}")
+
+    # Gate 3: review report must exist
+    if not proposal.report_path or not Path(proposal.report_path).exists():
+        failures.append("Review report not found. Run: roxy evolve review {proposal.id[:20]}")
+
+    # Gate 4: working tree must be clean
     from roxy.evolution.workspace import EvolutionWorkspace
     ws = EvolutionWorkspace()
+    info = ws.status()
+    if not info.is_clean:
+        failures.append("Working tree not clean. Commit or stash changes first.")
+    if info.current_branch != "main":
+        failures.append(f"Must be on main branch to merge. Currently on: {info.current_branch}")
+
+    # Gate 5: eval regressions
+    if proposal.report_path and Path(proposal.report_path).exists():
+        report_text = Path(proposal.report_path).read_text(encoding="utf-8")
+        reg_match = re.search(r"Regressions:\s*(\d+)", report_text)
+        if reg_match and int(reg_match.group(1)) > 0:
+            failures.append(
+                f"Eval report shows {reg_match.group(1)} regression(s). "
+                f"Review the report and re-run with --allow-regressions if approved."
+            )
+
+    if failures:
+        console.print("[red]Merge blocked — safety gates not met:[/red]")
+        for f in failures:
+            console.print(f"  [red]✗[/red] {f}")
+        raise SystemExit(1)
+
     try:
         commit = ws.merge_to_main(proposal.id)
         proposal.status = "merged"

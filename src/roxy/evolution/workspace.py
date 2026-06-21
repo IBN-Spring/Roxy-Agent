@@ -45,14 +45,32 @@ class EvolutionWorkspace:
             is_clean=is_clean,
         )
 
-    def prepare(self, proposal_id: str) -> str:
-        """Create an isolated branch for a proposal. Returns branch name."""
+    def prepare(self, proposal_id: str, force: bool = False) -> str:
+        """Create an isolated branch for a proposal. Returns branch name.
+
+        Must be on main branch. Raises RuntimeError if not.
+        Raises RuntimeError if old branch exists and --force not given.
+        """
         branch = f"evolve/{proposal_id}"
+        current = self._run(["git", "branch", "--show-current"]).strip()
 
-        # Delete old branch if it exists
-        self._run(["git", "branch", "-D", branch], check=False)
+        if current != "main":
+            raise RuntimeError(
+                f"Must be on 'main' branch to prepare an evolution patch. "
+                f"Currently on '{current}'. Run: git checkout main"
+            )
 
-        # Create new branch from HEAD
+        # Check if old branch exists
+        existing = self._run(["git", "branch", "--list", branch]).strip()
+        if existing and not force:
+            raise RuntimeError(
+                f"Branch '{branch}' already exists. "
+                f"Use --force to overwrite, or clean up with: git branch -D {branch}"
+            )
+
+        if existing and force:
+            self._run(["git", "branch", "-D", branch])
+
         self._run(["git", "checkout", "-b", branch])
         return branch
 

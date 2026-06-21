@@ -107,12 +107,20 @@ class EvolutionPatcher:
                     '        "Fetch the content'
                 ),
             }
+            # v0.8.1 fix: use marker check instead of flawed substring logic
+            _MARKERS = {
+                "knowledge_query.py": "Examples: /kb protein folding",
+                "file_read.py": "Examples: read AGENTS.md",
+                "web_fetch.py": "Examples: fetch https://example.com",
+            }
             for filename, (old, new) in enhancements.items():
                 path = tools_dir / filename
                 if not path.exists():
                     continue
                 content = path.read_text(encoding="utf-8")
-                if old in content and old not in content.replace(old, new, 1):
+                # Check that old fragment exists AND marker is not yet present
+                marker = _MARKERS.get(filename, "")
+                if old in content and marker not in content:
                     updated = content.replace(old, new, 1)
                     path.write_text(updated, encoding="utf-8")
                     changed.append(str(path.relative_to(repo)))
