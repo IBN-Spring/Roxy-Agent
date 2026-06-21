@@ -22,6 +22,12 @@ class EvolutionProposal:
     created_at: str = ""
     updated_at: str = ""
 
+    # v0.8: patch execution state
+    patch_status: str = ""    # prepared | applied | failed
+    test_status: str = ""     # pending | passed | failed
+    report_path: str = ""     # path to patch report markdown
+    branch: str = ""          # git branch name
+
     # Evidence
     problem: str = ""      # What is wrong
     evidence: str = ""     # Data backing the claim (trace ids, eval case ids, metrics)
@@ -47,6 +53,8 @@ class EvolutionProposal:
             "id": self.id, "title": self.title, "status": self.status,
             "target": self.target, "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "patch_status": self.patch_status, "test_status": self.test_status,
+            "report_path": self.report_path, "branch": self.branch,
             "problem": self.problem, "evidence": self.evidence,
             "proposed_change": self.proposed_change,
             "target_files": self.target_files,
@@ -61,6 +69,8 @@ class EvolutionProposal:
             id=d.get("id", ""), title=d.get("title", ""),
             status=d.get("status", "draft"), target=d.get("target", ""),
             created_at=d.get("created_at", ""), updated_at=d.get("updated_at", ""),
+            patch_status=d.get("patch_status", ""), test_status=d.get("test_status", ""),
+            report_path=d.get("report_path", ""), branch=d.get("branch", ""),
             problem=d.get("problem", ""), evidence=d.get("evidence", ""),
             proposed_change=d.get("proposed_change", ""),
             target_files=d.get("target_files", []),
