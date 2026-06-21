@@ -20,13 +20,20 @@ def evolve_cmd() -> None:
 
 
 @evolve_cmd.command("observe")
+@click.option("--from-eval", default="", help="Path to eval report for evidence.")
 @click.option("--json", "as_json", is_flag=True, help="Output as JSON.")
-def evolve_observe(as_json: bool) -> None:
+def evolve_observe(from_eval: str, as_json: bool) -> None:
     """Scan for improvement opportunities across traces, eval, channels."""
     from roxy.evolution.planner import EvolutionPlanner
 
+    if from_eval:
+        from pathlib import Path
+        if not Path(from_eval).exists():
+            console.print(f"[red]Eval report not found: {from_eval}[/red]")
+            raise SystemExit(1)
+
     planner = EvolutionPlanner()
-    findings = planner.observe()
+    findings = planner.observe(from_eval=from_eval)
 
     if as_json:
         import json
@@ -65,8 +72,18 @@ def evolve_propose(target: str, from_eval: str) -> None:
         console.print(f"Valid targets: {', '.join(sorted(valid))}")
         return
 
+    if from_eval:
+        from pathlib import Path
+        if not Path(from_eval).exists():
+            console.print(f"[red]Eval report not found: {from_eval}[/red]")
+            raise SystemExit(1)
+
     planner = EvolutionPlanner()
-    proposal = planner.propose(target, from_eval=from_eval)
+    try:
+        proposal = planner.propose(target, from_eval=from_eval)
+    except FileNotFoundError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1)
 
     if proposal is None:
         console.print(f"[yellow]Could not generate proposal for '{target}'.[/yellow]")
@@ -120,7 +137,11 @@ def proposals_show(proposal_id: str) -> None:
     from roxy.evolution.planner import EvolutionPlanner
 
     planner = EvolutionPlanner()
-    proposal = planner.show_proposal(proposal_id)
+    try:
+        proposal = planner.show_proposal(proposal_id)
+    except ValueError as exc:
+        console.print(f"[yellow]{exc}[/yellow]")
+        return
 
     if proposal is None:
         console.print(f"[yellow]Proposal not found: '{proposal_id}'[/yellow]")

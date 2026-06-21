@@ -14,16 +14,17 @@ class EvolutionPlanner:
         self.observer = EvolutionObserver()
         self.store = ProposalStore()
 
-    def observe(self) -> list[dict]:
+    def observe(self, from_eval: str = "") -> list[dict]:
         """Run observation and return findings."""
-        return self.observer.observe()
+        return self.observer.observe(from_eval=from_eval)
 
     def propose(self, target: str, from_eval: str = "") -> EvolutionProposal | None:
         """Generate a proposal for a specific target.
 
         Args:
             target: one of context-compaction, tool-descriptions, system-prompt
-            from_eval: optional path to eval report for evidence enrichment
+            from_eval: optional path to eval report for evidence enrichment.
+                       Raises FileNotFoundError if path does not exist.
         """
         template = self.observer.generate_proposal(target, from_eval)
         if not template:

@@ -32,9 +32,24 @@ class ProposalStore:
         self._write_all(all_proposals)
 
     def get(self, proposal_id: str) -> EvolutionProposal | None:
+        """Get a proposal by ID or unique prefix. Returns None if not found.
+
+        Raises ValueError if prefix matches multiple proposals.
+        """
+        matches = []
         for p in self.list_all():
-            if p.id == proposal_id or p.id.startswith(proposal_id):
+            if p.id == proposal_id:
                 return p
+            if p.id.startswith(proposal_id):
+                matches.append(p)
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            ids = ", ".join(p.id[:16] for p in matches)
+            raise ValueError(
+                f"Prefix '{proposal_id}' matches {len(matches)} proposals: {ids}. "
+                f"Use a longer prefix."
+            )
         return None
 
     def list_all(self) -> list[EvolutionProposal]:
